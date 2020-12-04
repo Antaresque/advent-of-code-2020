@@ -1,6 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
-
-let countList f = List.sumBy (fun n -> if f n then 1 else 0)
+﻿let countList f list = List.filter f list |> List.length
 
 let inputRec list =
     let rec f list (acc:list<string>) str =
@@ -12,17 +10,42 @@ let inputRec list =
             | x -> f xs acc (str + " " + x) 
     f list [] ""
 
-let isValid reqIds passIds =
-    reqIds
-        |> countList (fun n -> (List.contains n passIds))
-        |> (fun n -> n = reqIds.Length)
+let isValid passIds =
+    let list = passIds |> List.map fst
+    ["byr"; "iyr"; "eyr"; "hgt"; "hcl"; "ecl"; "pid"]
+        |> List.forall (fun n -> (List.contains n list))
+
+let isReqValid passIds =
+    let byr = int >> (fun n -> n >= 1920 && n <= 2002) 
+    let iyr = int >> (fun n -> n >= 2010 && n <= 2020)
+    let eyr = int >> (fun n -> n >= 2020 && n <= 2030)
+    let ecl = function "amb" | "blu" | "brn" | "gry" | "grn" | "hzl" | "oth" -> true | _ -> false
+    let pid (str:string) = if str.Length = 9 then (Seq.forall System.Char.IsDigit str) else false
+
+    let hgtCheck (str:string) =
+        match str.[str.Length-2..] with
+        | "cm" -> int str.[..str.Length-3] |> (fun n -> n >= 150 && n <= 193)
+        | "in" -> int str.[..str.Length-3] |> (fun n -> n >= 59 && n <= 76)
+        | _ -> false  
+    let hgt (str:string) = if str.Length > 2 then (hgtCheck str) else false
+
+    let isDigitOrAF c = System.Char.IsDigit c || (c >= 'a' && c <= 'f')
+    let hclCheck (str:string) =
+        match str.[0] with
+        | '#' -> Seq.forall isDigitOrAF str.[1..]
+        | _ -> false
+    let hcl (str:string) = if str.Length = 7 then (hclCheck str) else false
+
+    let func = Map [("byr", byr); ("iyr", iyr); ("eyr", eyr); ("ecl", ecl); ("pid", pid); ("hgt", hgt); ("hcl", hcl); ("cid", (fun _ -> true))]
+    let testFunc (a, b) =
+        match Map.tryFind a func with
+            | Some f -> f b
+            | None -> false
+
+    passIds |> List.forall (fun (a, b) -> testFunc (a,b))
     
-let validPassports reqIds list =
-    list 
-        |> List.map (fun l -> (List.map (fst) l))
-        |> countList (isValid reqIds)
-    
-let part1 = validPassports ["byr"; "iyr"; "eyr"; "hgt"; "hcl"; "ecl"; "pid"]
+let part1 list = list |> countList isValid
+let part2 list = list |> List.filter isValid |> countList isReqValid
 
 [<EntryPoint>]
 let main argv =
@@ -38,6 +61,6 @@ let main argv =
         )
 
     lines |> part1 |> printfn "%d" 
-    //lines |> part2 |> printfn "%d"
+    lines |> part2 |> printfn "%d"
 
     0 
