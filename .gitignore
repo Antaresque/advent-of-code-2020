@@ -1,5 +1,6 @@
 **/bin
 **/obj
+**/data-test.txt
 *.fsproj
 
 .fake
