@@ -15,8 +15,15 @@ let getCol = binaryPart ['L'; 'R']
 let getRowAndColumn (str:string) = (getRow str.[0..6]), (getCol str.[7..])
 let calcID (row, col) = row * 8 + col
 
+let rec returnAlone sortList = 
+    match sortList with
+    | [] -> -1
+    | _ :: xs when xs.Length = 0 -> -1
+    | x :: xs when ((xs.Item 0) - x) = 2 -> (x + 1)
+    | _ :: xs -> returnAlone xs
+
 let part1 list = list |> List.map (getRowAndColumn >> calcID) |> List.max
-let part2 list = 0
+let part2 list = list |> List.map (getRowAndColumn >> calcID) |> List.sort |> returnAlone
 
 [<EntryPoint>]
 let main argv =
